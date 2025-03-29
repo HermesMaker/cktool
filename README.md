@@ -33,3 +33,7 @@ specific out directory.
 ```
 cktool --url https://coomer.su/fansly/user/12345
 ```
+
+## Support me
+bitcoin: [14wptNGSb4sVfNnMLnKrb3Vbntd1FYBxyn](bitcoin:14wptNGSb4sVfNnMLnKrb3Vbntd1FYBxyn)
+
