@@ -1,4 +1,4 @@
-# Cktool Coomer
+# Cktool Coomer Downloader
 
 cktool is coomer.su and kemono.su downloader tool.
 
