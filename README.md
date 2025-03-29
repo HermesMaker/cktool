@@ -1,4 +1,4 @@
-# Cktool Coomer
+# Cktool Coomer Downloader
 
 A Rust-based CLI tool for downloading content from coomer.su and kemono.su platforms.
 
