@@ -5,7 +5,7 @@ use std::{cmp::min, process::exit, sync::Arc};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
-    time::{sleep, Duration},
+    time::{Duration, sleep},
 };
 
 #[derive(Clone)]
@@ -246,7 +246,7 @@ async fn download_per_page(link: &Link, outdir: &String, m: Arc<Mutex<MultiProgr
                 sleep(Duration::from_secs(1)).await;
                 pb.finish_and_clear();
             } else {
-                println!("Client failed send")
+                println!("Client failed send {}", path)
             }
         } else {
             println!("Failed Create file");
