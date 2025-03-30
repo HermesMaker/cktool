@@ -15,10 +15,10 @@ struct Link {
 
 impl Link {
     /// Parses a URL string into a Link struct
-    /// 
+    ///
     /// # Arguments
     /// * `url` - The URL string to parse
-    /// 
+    ///
     /// # Returns
     /// * `Option<Self>` - Returns Some(Link) if parsing is successful, None otherwise
     pub fn parse(url: String) -> Option<Self> {
@@ -47,7 +47,7 @@ struct Page {
 }
 
 /// Main function to download all content from a given URL
-/// 
+///
 /// # Arguments
 /// * `url` - The base URL to download from
 /// * `split_dir` - Whether to split downloads into separate directories
@@ -71,17 +71,24 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
         outdir.clone()
     };
     let mut posts_id = Vec::new();
-    
+
     // Fetch all post IDs from paginated API
+    let mut confirm = 0;
     loop {
         let link = format!("{}?o={}", link.url, i * 50);
         print!("fetching {}", link);
         if let Ok(r) = reqwest::get(link).await {
             let len = r.content_length().unwrap_or(0);
             if len < 10 {
+                confirm += 1;
+                if confirm < 3 {
+                    print!(".");
+                    continue;
+                }
                 println!(" -- NONE");
                 break;
             }
+            confirm = 0;
             let _ = fs::create_dir_all(&outdir).await;
             if let Ok(content) = r.text().await {
                 if let Ok(obj) = json::parse(&content) {
@@ -148,10 +155,10 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
 }
 
 /// Fetches all post attachments from a specific page URL
-/// 
+///
 /// # Arguments
 /// * `url` - The URL of the post page
-/// 
+///
 /// # Returns
 /// * `Vec<String>` - Vector of file paths to download
 async fn get_posts_from_page(url: &String) -> Vec<String> {
@@ -185,7 +192,7 @@ async fn get_posts_from_page(url: &String) -> Vec<String> {
 }
 
 /// Downloads all files from a specific page
-/// 
+///
 /// # Arguments
 /// * `link` - The Link struct containing domain and URL information
 /// * `outdir` - Output directory for downloaded files
