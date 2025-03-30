@@ -5,6 +5,7 @@ use std::{cmp::min, process::exit, sync::Arc};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
+    time::{sleep, Duration},
 };
 
 #[derive(Clone)]
@@ -117,33 +118,24 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
         total: posts_id.len() as u32,
     };
     while posts_id.len() != 0 {
-        let mut post_limit = Vec::new();
-        for _ in 0..task_limit {
-            if posts_id.len() == 0 {
-                break;
-            }
-            post_limit.push(posts_id.pop());
-        }
         let mut multi_task = tokio::task::JoinSet::new();
-        for pid in post_limit {
-            if let Some(pid) = pid {
-                let outdir = outdir.clone();
-                let link = link.clone();
-                let m = m.clone();
-                while multi_task.len() >= task_limit {
-                    multi_task.join_next().await.unwrap().unwrap();
-                }
-                page.current += 1;
-                let page = page.clone();
-                multi_task.spawn(async move {
-                    let url = format!("{}/post/{}", link.url, pid);
-                    let link = Link {
-                        domain: link.domain,
-                        url: url,
-                    };
-                    download_per_page(&link, &outdir, m, page).await;
-                });
+        while let Some(pid) = posts_id.pop() {
+            let outdir = outdir.clone();
+            let link = link.clone();
+            let m = m.clone();
+            while multi_task.len() >= task_limit {
+                multi_task.join_next().await.unwrap().unwrap();
             }
+            page.current += 1;
+            let page = page.clone();
+            multi_task.spawn(async move {
+                let url = format!("{}/post/{}", link.url, pid);
+                let link = Link {
+                    domain: link.domain,
+                    url: url,
+                };
+                download_per_page(&link, &outdir, m, page).await;
+            });
         }
         while let Some(result) = multi_task.join_next().await {
             match result {
@@ -251,6 +243,8 @@ async fn download_per_page(link: &Link, outdir: &String, m: Arc<Mutex<MultiProgr
                     fname.purple(),
                     "success".green().bold()
                 ));
+                sleep(Duration::from_secs(1)).await;
+                pb.finish_and_clear();
             } else {
                 println!("Client failed send")
             }
