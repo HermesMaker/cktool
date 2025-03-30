@@ -1,12 +1,13 @@
 [package]
 name = "cktool"
 description = "coomer.su and kemono.su downloader tool"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.34", features = ["derive"] }
 clap_complete = "4.5.47"
+colored = "3.0.0"
 futures-util = "0.3.31"
 indicatif = "0.17.11"
 json = "0.12.4"

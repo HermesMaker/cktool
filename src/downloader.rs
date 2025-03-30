@@ -1,7 +1,7 @@
-use std::{cmp::min, process::exit, sync::Arc};
-
+use colored::Colorize;
 use futures_util::{StreamExt, lock::Mutex};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use std::{cmp::min, process::exit, sync::Arc};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -76,16 +76,16 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
     let mut confirm = 0;
     loop {
         let link = format!("{}?o={}", link.url, i * 50);
-        print!("fetching {}", link);
+        print!("fetching {}", link.purple());
         if let Ok(r) = reqwest::get(link).await {
             let len = r.content_length().unwrap_or(0);
             if len < 10 {
                 confirm += 1;
                 if confirm < 3 {
-                    print!(".");
+                    println!(" -- {} {}", "CONFIRM".yellow(), confirm);
                     continue;
                 }
-                println!(" -- NONE");
+                println!(" -- {}", "NONE".yellow().bold());
                 break;
             }
             confirm = 0;
@@ -102,9 +102,9 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
             } else {
                 println!("Cannot get text content");
             }
-            println!(" -- PASS");
+            println!(" -- {}", "PASS".green().bold());
         } else {
-            println!(" -- FAILED");
+            println!(" -- {}", "FAILED".red().bold());
             exit(101);
         }
 
@@ -224,8 +224,11 @@ async fn download_per_page(link: &Link, outdir: &String, m: Arc<Mutex<MultiProgr
                         .template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})").unwrap()
                         .progress_chars("#>-"));
                 pb.set_message(format!(
-                    "[{}/{}] {} downloading...",
-                    page.current, page.total, fname
+                    "[{}/{}] {} {}",
+                    page.current,
+                    page.total,
+                    fname.purple(),
+                    "downloading...".blue().bold()
                 ));
 
                 // Stream and write the file with progress updates
@@ -242,8 +245,11 @@ async fn download_per_page(link: &Link, outdir: &String, m: Arc<Mutex<MultiProgr
                     }
                 }
                 pb.finish_with_message(format!(
-                    "[{}/{}] {} success",
-                    page.current, page.total, fname
+                    "[{}/{}] {} {}",
+                    page.current,
+                    page.total,
+                    fname.purple(),
+                    "success".green().bold()
                 ));
             } else {
                 println!("Client failed send")

@@ -1,7 +1,7 @@
 // Import required dependencies for CLI argument parsing and shell completion
+use cktool::downloader;
 use clap::{CommandFactory, Parser, command};
 use clap_complete::{Shell, generate};
-use cktool::downloader;
 use std::io;
 
 /// Command line arguments structure for the cktool
