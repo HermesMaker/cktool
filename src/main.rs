@@ -12,7 +12,7 @@ struct Args {
     #[arg(short, long)]
     out: Option<String>,
     /// Number of concurrent download tasks
-    #[arg(short, long, default_value_t = 8)]
+    #[arg(short, long, default_value_t = 20)]
     task: usize,
     /// Whether to split downloads into separate directories
     #[arg(short, long, default_value_t = false)]
