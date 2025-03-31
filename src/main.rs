@@ -44,7 +44,7 @@ async fn main() {
             None => url.split("/").last().unwrap().to_string(),
         };
         // Start the download process with specified parameters
-        downloader::all(&url, args.split, args.task, &out_dir).await;
+        let _ = downloader::all(&url, args.split, args.task, &out_dir).await;
         println!("Download success");
     } else {
         // Show help message if no URL is provided
