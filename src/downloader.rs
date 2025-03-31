@@ -117,7 +117,7 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
         current: 0,
         total: posts_id.len() as u32,
     };
-    while posts_id.is_empty() {
+    while !posts_id.is_empty() {
         let mut multi_task = tokio::task::JoinSet::new();
         while let Some(pid) = posts_id.pop() {
             let outdir = outdir.clone();
