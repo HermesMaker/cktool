@@ -25,15 +25,15 @@ impl Link {
     pub fn parse(url: String) -> Option<Self> {
         let url: Vec<&str> = url.split("?").collect();
         let url = url
-            .get(0)
+            .first()
             .expect("Cannot parse Url")
             .replace(".su", ".su/api/v1");
         let domain = url.split(".su").collect::<Vec<&str>>();
-        if let Some(domain) = domain.get(0) {
-            return Some(Self {
+        if let Some(domain) = domain.first() {
+            Some(Self {
                 domain: format!("{}.su", domain),
-                url: url,
-            });
+                url,
+            })
         } else {
             None
         }
@@ -109,7 +109,7 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
             exit(101);
         }
 
-        i = i + 1;
+        i += 1;
     }
 
     // Process downloads in batches with concurrent tasks
@@ -117,7 +117,7 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
         current: 0,
         total: posts_id.len() as u32,
     };
-    while posts_id.len() != 0 {
+    while posts_id.is_empty() {
         let mut multi_task = tokio::task::JoinSet::new();
         while let Some(pid) = posts_id.pop() {
             let outdir = outdir.clone();
@@ -132,7 +132,7 @@ pub async fn all(url: &String, split_dir: bool, task_limit: usize, outdir: &Stri
                 let url = format!("{}/post/{}", link.url, pid);
                 let link = Link {
                     domain: link.domain,
-                    url: url,
+                    url,
                 };
                 download_per_page(&link, &outdir, m, page).await;
             });
@@ -180,7 +180,7 @@ async fn get_posts_from_page(url: &String) -> Vec<String> {
     } else {
         println!("ERROR: Failed request from {}", url);
     }
-    return posts;
+    posts
 }
 
 /// Downloads all files from a specific page
@@ -190,10 +190,10 @@ async fn get_posts_from_page(url: &String) -> Vec<String> {
 /// * `outdir` - Output directory for downloaded files
 /// * `m` - Progress tracking mutex
 /// * `page` - Current page information for progress display
-async fn download_per_page(link: &Link, outdir: &String, m: Arc<Mutex<MultiProgress>>, page: Page) {
+async fn download_per_page(link: &Link, outdir: &str, m: Arc<Mutex<MultiProgress>>, page: Page) {
     let posts = get_posts_from_page(&link.url).await;
     for path in posts {
-        let outdir = outdir.clone();
+        let outdir = outdir.to_owned();
         let mc = m.clone();
         let link = format!("{}{}", link.domain, path);
         let fname = path
