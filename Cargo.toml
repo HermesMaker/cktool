@@ -4,6 +4,9 @@ description = "coomer.su and kemono.su downloader tool"
 version = "0.1.3"
 edition = "2024"
 license = "GPL-3.0-only"
+repository = "https://github.com/HermesMaker/cktool"
+readme = "README.md"
+categories = ["command-line-utilities"]
 
 include = ["src/*"]
 
