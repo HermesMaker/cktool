@@ -1,37 +1,29 @@
 name: Release
 
-on:
-  release:
-    types: [published]
+permissions:
+  contents: write
 
-env:
-  CARGO_TERM_COLOR: always
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.*
 
 jobs:
-  release:
+  create-release:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-    
-    - name: Build release
-      run: cargo build --release --verbose
-    
-    - name: Create release archive
-      run: |
-        mkdir -p release
-        cp target/release/coomerd release/
-        tar czf coomerd-linux-x86_64.tar.gz -C release .
-    
-    - name: Upload release asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./coomerd-linux-x86_64.tar.gz
-        asset_name: coomerd-linux-x86_64.tar.gz
-        asset_content_type: application/gzip 
+      - uses: actions/checkout@v4
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-assets:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: ...
+          # (required) GitHub token for uploading assets to GitHub Releases.
+          token: ${{ secrets.GITHUB_TOKEN }}
