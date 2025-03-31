@@ -14,9 +14,6 @@ struct Args {
     /// Number of concurrent download tasks
     #[arg(short, long, default_value_t = 20)]
     task: usize,
-    /// Whether to split downloads into separate directories
-    #[arg(short, long, default_value_t = false)]
-    split: bool,
     /// URL of the profile account to download content from
     #[arg(short, long)]
     url: Option<String>,
@@ -41,10 +38,17 @@ async fn main() {
         // Determine output directory - use URL's last segment if not specified
         let out_dir = match args.out {
             Some(path) => path,
-            None => url.split("/").last().unwrap().to_string(),
+            None => {
+                let url = url.split("/").last().unwrap().to_string();
+                url.split("?")
+                    .collect::<Vec<&str>>()
+                    .first()
+                    .expect("cannot parse url")
+                    .to_string()
+            }
         };
         // Start the download process with specified parameters
-        let _ = downloader::all(&url, args.split, args.task, &out_dir).await;
+        let _ = downloader::all(&url, args.task, &out_dir).await;
         println!("Download success");
     } else {
         // Show help message if no URL is provided
