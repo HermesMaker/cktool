@@ -96,18 +96,17 @@ async fn get_posts_from_page(url: &str) -> Result<Vec<String>> {
 
     let mut posts = Vec::new();
 
-    // Add main file if present
-    if let Some(file) = obj["post"]["file"]["path"].as_str() {
-        posts.push(file.to_string());
-    }
-
     // Add attachments
-    if let JsonValue::Array(attachments) = &obj["post"]["attachments"] {
-        posts.extend(
-            attachments
-                .iter()
-                .filter_map(|a| a["path"].as_str().map(String::from)),
-        );
+    if let JsonValue::Array(attachments) = &obj["attachments"] {
+        for atta in attachments {
+            posts.push(format!("{}/data{}", atta["server"], atta["path"]));
+        }
+    }
+    // Add previews
+    if let JsonValue::Array(previews) = &obj["previews"] {
+        for preview in previews {
+            posts.push(format!("{}/data{}", preview["server"], preview["path"]));
+        }
     }
 
     Ok(posts)
@@ -131,14 +130,13 @@ async fn download_per_page(
     for path in posts {
         let outdir = outdir.to_owned();
         let mc = m.clone();
-        let link = format!("{}{}", link.domain, path);
         let fname = path.split("/").last().context("Invalid file path")?;
 
         let client = reqwest::Client::new();
         let file = File::create(format!("{}/{}", outdir, fname)).await?;
         let mut file = BufWriter::new(file);
 
-        if let Ok(res) = client.get(&link).send().await {
+        if let Ok(res) = client.get(&path).send().await {
             let total_size = res.content_length().context("Cannot get total size")?;
 
             let pb = mc.lock().await.add(ProgressBar::new(total_size));
