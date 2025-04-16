@@ -3,50 +3,65 @@ use anyhow::Result;
 use colored::Colorize;
 use tokio::fs;
 
-pub async fn fetch_one_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
+pub async fn fetch_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
+    match link.page {
+        crate::link::Page::All => fetch_all_pages(link, outdir).await,
+        crate::link::Page::One(_) => fetch_one_page(link, outdir).await,
+    }
+}
+
+async fn fetch_one_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
     let mut posts_id = Vec::new();
+    let mut confirm = 0;
     println!("Start fetching pages");
-    print!("fetching {}", link.url.purple());
-    match reqwest::get(&link.url).await {
-        Ok(r) => {
-            let len = r.content_length().unwrap_or(0);
-            if len < 10 {
-                println!(" -- {}", "NONE".yellow().bold());
-                return Err(anyhow::anyhow!("Page is NONE"));
+    print!("fetching {}", link.url().purple());
+    loop {
+        match reqwest::get(link.url()).await {
+            Ok(r) => {
+                let len = r.content_length().unwrap_or(0);
+                if len < 10 {
+                    println!(" -- {}", "NONE".yellow().bold());
+                    return Err(anyhow::anyhow!("Page is NONE"));
+                }
+
+                fs::create_dir_all(&outdir).await?;
+
+                if let Ok(content) = r.text().await {
+                    if let Ok(obj) = json::parse(&content) {
+                        posts_id.extend((0..obj.len()).map(|i| obj[i]["id"].to_string()));
+                    } else {
+                        println!("Cannot parse JSON: {}", content);
+                    }
+                }
+                println!(" -- {}", "PASS".green().bold());
+                break;
             }
-
-            fs::create_dir_all(&outdir).await?;
-
-            if let Ok(content) = r.text().await {
-                if let Ok(obj) = json::parse(&content) {
-                    posts_id.extend((0..obj.len()).map(|i| obj[i]["id"].to_string()));
+            Err(_) => {
+                println!(" -- {}", "FAILED".red().bold());
+                if confirm > 2 {
+                    return Err(anyhow::anyhow!("Failed to fetch page"));
                 } else {
-                    println!("Cannot parse JSON: {}", content);
+                    confirm += 1;
                 }
             }
-            println!(" -- {}", "PASS".green().bold());
-        }
-        Err(_) => {
-            println!(" -- {}", "FAILED".red().bold());
-            return Err(anyhow::anyhow!("Failed to fetch page"));
         }
     }
     Ok(posts_id)
 }
 
-pub async fn fetch_all_pages(link: &Link, outdir: &str) -> Result<Vec<String>> {
+async fn fetch_all_pages(link: &Link, outdir: &str) -> Result<Vec<String>> {
     let mut posts_id = Vec::new();
-    let mut i = 0;
     let mut confirm = 0;
+    let mut link = link.clone();
+    link.set_page(0);
 
     println!("Start fetching pages");
 
     // Fetch all post IDs from paginated API
     loop {
-        let link = format!("{}?o={}", link.url, i * 50);
-        print!("fetching {}", link.purple());
+        print!("fetching {}", link.url().purple());
 
-        match reqwest::get(&link).await {
+        match reqwest::get(&link.url()).await {
             Ok(r) => {
                 let len = r.content_length().unwrap_or(0);
                 if len < 10 {
@@ -76,7 +91,7 @@ pub async fn fetch_all_pages(link: &Link, outdir: &str) -> Result<Vec<String>> {
                 return Err(anyhow::anyhow!("Failed to fetch page"));
             }
         }
-        i += 1;
+        link.page_increst();
     }
     Ok(posts_id)
 }
