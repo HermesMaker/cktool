@@ -2,14 +2,14 @@ use crate::link::Link;
 use anyhow::Result;
 use colored::Colorize;
 
-pub async fn fetch_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
+pub async fn fetch_page(link: &Link) -> Result<Vec<String>> {
     match link.page {
-        crate::link::Page::All => fetch_all_pages(link, outdir).await,
-        crate::link::Page::One(_) => fetch_one_page(link, outdir).await,
+        crate::link::Page::All => fetch_all_pages(link).await,
+        crate::link::Page::One(_) => fetch_one_page(link).await,
     }
 }
 
-async fn fetch_one_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
+async fn fetch_one_page(link: &Link) -> Result<Vec<String>> {
     let mut posts_id = Vec::new();
     let mut confirm = 0;
     println!("Start fetching pages");
@@ -46,7 +46,7 @@ async fn fetch_one_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
     Ok(posts_id)
 }
 
-async fn fetch_all_pages(link: &Link, outdir: &str) -> Result<Vec<String>> {
+async fn fetch_all_pages(link: &Link) -> Result<Vec<String>> {
     let mut posts_id = Vec::new();
     let mut confirm = 0;
     let mut link = link.clone();
