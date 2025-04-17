@@ -1,7 +1,6 @@
 use crate::link::Link;
 use anyhow::Result;
 use colored::Colorize;
-use tokio::fs;
 
 pub async fn fetch_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
     match link.page {
@@ -23,8 +22,6 @@ async fn fetch_one_page(link: &Link, outdir: &str) -> Result<Vec<String>> {
                     println!(" -- {}", "NONE".yellow().bold());
                     return Err(anyhow::anyhow!("Page is NONE"));
                 }
-
-                fs::create_dir_all(&outdir).await?;
 
                 if let Ok(content) = r.text().await {
                     if let Ok(obj) = json::parse(&content) {
@@ -75,7 +72,6 @@ async fn fetch_all_pages(link: &Link, outdir: &str) -> Result<Vec<String>> {
                 }
 
                 confirm = 0;
-                fs::create_dir_all(&outdir).await?;
 
                 if let Ok(content) = r.text().await {
                     if let Ok(obj) = json::parse(&content) {

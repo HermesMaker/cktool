@@ -1,31 +1,62 @@
 use anyhow::{Context, Ok, Result};
 
 /// specific page download.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Page {
     /// Download all pages.
     All,
     /// Download single page.
-    One(u8),
+    One(u64),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+pub enum UrlType {
+    /// pages means the page showing the list of posts.
+    Page,
+    /// post is a page that displays content.
+    Post,
+    /// `None` means do not need to uses this value.
+    None,
+}
+
+impl UrlType {
+    /// Create instance of UrlType by Url
+    /// this method just detect 'post' word from url
+    pub fn parse(url: &str) -> Self {
+        if url.contains("post") {
+            UrlType::Post
+        } else {
+            UrlType::Page
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Link {
     pub domain: String,
     url: String,
     pub page: Page,
+    pub typ: UrlType,
 }
 
 impl Link {
     pub fn url(&self) -> String {
+        if let UrlType::Post = self.typ {
+            return self.url.clone();
+        }
         match self.page {
             Page::All => self.url.clone(),
             Page::One(page_number) => format!("{}?o={}", self.url, page_number * 50),
         }
     }
     /// create instance of Link.
-    pub fn new(domain: String, url: String, page: Page) -> Self {
-        Self { domain, url, page }
+    pub fn new(domain: String, url: String, page: Page, typ: UrlType) -> Self {
+        Self {
+            domain,
+            url,
+            page,
+            typ,
+        }
     }
     /// Parses a URL string into a Link struct
     ///
@@ -43,7 +74,12 @@ impl Link {
         let domain = url.split(".su").collect::<Vec<&str>>();
         let domain = domain.first().context("Invalid domain")?;
 
-        Ok(Self::new(format!("{}.su", domain), url, Page::All))
+        Ok(Self::new(
+            format!("{}.su", domain),
+            url.clone(),
+            Page::All,
+            UrlType::parse(&url),
+        ))
     }
 
     /// remove '?o=' from url
@@ -58,10 +94,26 @@ impl Link {
             self.page = Page::One(page_number + 1);
         }
     }
-    pub fn set_page(&mut self, page_number: u8) {
+    pub fn set_page(&mut self, page_number: u64) {
         self.page = Page::One(page_number);
     }
     pub fn post_id(&self, post_id: &String) -> String {
+        if let UrlType::Post = self.typ {
+            return self.url.clone();
+        }
         format!("{}/post/{}", self.url, post_id)
+    }
+    pub fn get_post_id(&self) -> Option<&str> {
+        if let UrlType::Post = self.typ {
+            let mut url_split = self.url.split("/").collect::<Vec<&str>>();
+            if let Some(post_id) = url_split.pop() {
+                // check if last element is empty &str
+                if post_id.len() == 0 {
+                    return url_split.pop();
+                }
+                return Some(post_id);
+            }
+        }
+        None
     }
 }

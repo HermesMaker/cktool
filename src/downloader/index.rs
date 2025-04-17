@@ -3,6 +3,7 @@ use anyhow::Result;
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
 use std::sync::Arc;
+use tokio::fs;
 
 use super::{download_per_page::download_per_page, page_status::PageStatus};
 
@@ -17,7 +18,14 @@ pub async fn all(link: Link, task_limit: usize, outdir: &str) -> Result<()> {
     let m = Arc::new(Mutex::from(MultiProgress::new()));
 
     let outdir = outdir.to_string();
-    let mut posts_id = fetch_page(&link, &outdir).await?;
+    // check type of link.
+    let mut posts_id = match link.typ {
+        crate::link::UrlType::Post => vec![link.get_post_id().expect("invalid url").to_string()],
+        crate::link::UrlType::Page | crate::link::UrlType::None => {
+            fetch_page(&link, &outdir).await?
+        }
+    };
+    fs::create_dir_all(&outdir).await?;
     // Process downloads in batches
     let mut page = PageStatus {
         current: 0,

@@ -25,7 +25,7 @@ struct Args {
     completion: Option<Shell>,
     /// specific page downloading.
     #[arg(short,long, default_value=None, value_name="Number")]
-    page: Option<u8>,
+    page: Option<u64>,
 }
 
 #[tokio::main]
