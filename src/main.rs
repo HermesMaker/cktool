@@ -24,8 +24,8 @@ struct Args {
     #[arg(short, long)]
     completion: Option<Shell>,
     /// specific page downloading.
-    #[arg(short,long, default_value_t=!0)]
-    page: u8,
+    #[arg(short,long, default_value=None, value_name="Number")]
+    page: Option<u8>,
 }
 
 #[tokio::main]
@@ -54,10 +54,10 @@ async fn main() {
             }
         };
         if let Ok(mut link) = Link::parse(url) {
-            if args.page == !0 {
-                link.page = Page::All
+            if let Some(page) = args.page {
+                link.page = Page::One(page);
             } else {
-                link.page = Page::One(args.page);
+                link.page = Page::All
             }
             // Start the download process with specified parameters
             let _ = downloader::all(link, args.task, &out_dir).await;
