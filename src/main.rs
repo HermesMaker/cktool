@@ -55,7 +55,8 @@ async fn main() {
         };
         if let Ok(mut link) = Link::parse(url) {
             if let Some(page) = args.page {
-                link.page = Page::One(page);
+                // first page is zero.
+                link.page = Page::One(page - 1);
             } else {
                 link.page = Page::All
             }

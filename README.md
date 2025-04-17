@@ -18,12 +18,24 @@ A Rust-based CLI tool for downloading content from coomer.su and kemono.su platf
 
 2. Install cktool using cargo:
 ```bash
+cargo install cktool
+```
+
+or install from github repo.
+
+```bash
 cargo install --git=https://github.com/HermesMaker/cktool
 ```
 
 ### Binary Installation
 
 Pre-compiled binaries are available in the [releases](https://github.com/HermesMaker/cktool/releases) section.
+
+You can use `cargo-binstall` to install pre-compiled binaries with command below.
+
+```bash
+cargo binstall cktool
+```
 
 ## Usage
 
@@ -33,6 +45,19 @@ Download content from a profile using its URL:
 
 ```bash
 cktool --url https://coomer.su/fansly/user/12345
+```
+
+Download content only single post.
+
+```bash
+cktool --url https://coomer.su/fansly/user/12345/post/6789
+```
+
+### Specifying page download (50 posts)
+
+```bash
+cktool --url https://coomer.su/fansly/user/12345 -p 1
+
 ```
 
 ### Specifying Output Directory
