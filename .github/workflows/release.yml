@@ -9,26 +9,19 @@ on:
 
 jobs:
   create-release:
-    name: Create Release
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Create env
+    - uses: actions/checkout@v3
+    - name: Create env
         run: |
           echo "BODY=$(git log --format=%B -n 1)" >> ${GITHUB_ENV};
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: ${{ env.BODY }}
-          draft: false
-          prerelease: false
+    - name: Create a Release
+      uses: elgohr/Github-Release-Action@v5
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        title: ${{ github.ref }}
 
   upload-assets:
     needs: create-release
