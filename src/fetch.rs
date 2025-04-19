@@ -19,6 +19,11 @@ async fn fetch_one_page(link: &Link) -> Result<Vec<String>> {
             Ok(r) => {
                 let len = r.content_length().unwrap_or(0);
                 if len < 10 {
+                    confirm += 1;
+                    if confirm < 3 {
+                        println!(" -- {} {}", "CONFIRM".yellow(), confirm);
+                        continue;
+                    }
                     println!(" -- {}", "NONE".yellow().bold());
                     return Err(anyhow::anyhow!("Page is NONE"));
                 }
