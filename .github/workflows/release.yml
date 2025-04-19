@@ -9,12 +9,11 @@ on:
 
 jobs:
   create-release:
-  build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Create env
-        run: |
+      run: |
           echo "BODY=$(git log --format=%B -n 1)" >> ${GITHUB_ENV};
     - name: Create a Release
       uses: elgohr/Github-Release-Action@v5
