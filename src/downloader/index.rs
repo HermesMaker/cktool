@@ -21,9 +21,7 @@ pub async fn all(link: Link, task_limit: usize, outdir: &str) -> Result<()> {
     // check type of link.
     let mut posts_id = match link.typ {
         crate::link::UrlType::Post => vec![link.get_post_id().expect("invalid url").to_string()],
-        crate::link::UrlType::Page | crate::link::UrlType::None => {
-            fetch_page(&link).await?
-        }
+        crate::link::UrlType::Page | crate::link::UrlType::None => fetch_page(&link).await?,
     };
     fs::create_dir_all(&outdir).await?;
     // Process downloads in batches
