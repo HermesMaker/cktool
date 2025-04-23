@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use json::JsonValue;
 
 /// Fetches all post attachments from a specific page URL
@@ -10,8 +10,11 @@ use json::JsonValue;
 /// * `Result<Vec<String>>` - Vector of file paths to download
 pub async fn get_posts_from_page(url: &str) -> Result<Vec<String>> {
     let res = reqwest::get(url).await?;
-    let text = res.text().await?;
-    let obj = json::parse(&text)?;
+    let text = res
+        .text()
+        .await
+        .context("Cannot convert response body to text [res.text()]")?;
+    let obj = json::parse(&text).context("Cannot parse JSON from response body")?;
 
     let mut posts = Vec::new();
 

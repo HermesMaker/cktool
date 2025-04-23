@@ -56,14 +56,20 @@ pub async fn download_per_page(
             let mut downloaded: u64 = 0;
 
             while let Some(item) = stream.next().await {
-                let item = item?;
-                file.write_all(&item).await?;
-                let new = min(downloaded + (item.len() as u64), total_size);
-                downloaded = new;
-                pb.set_position(new);
+                match item {
+                    Ok(item) => {
+                        file.write_all(&item)
+                            .await
+                            .context("Failed writes bytes to file")?;
+                        let new = min(downloaded + (item.len() as u64), total_size);
+                        downloaded = new;
+                        pb.set_position(new);
+                    }
+                    Err(_) => continue,
+                }
             }
 
-            file.flush().await?;
+            file.flush().await.context("file.flush")?;
 
             pb.finish_with_message(format!(
                 "[{}/{}] {} {}",
