@@ -16,7 +16,7 @@ struct Args {
     #[arg(short, long)]
     out: Option<String>,
     /// Number of concurrent download tasks
-    #[arg(short, long, default_value_t = 20)]
+    #[arg(short, long, default_value_t = 8)]
     task: usize,
     /// URL of the profile account to download content from
     #[arg(short, long)]
