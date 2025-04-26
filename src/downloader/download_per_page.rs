@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use colored::Colorize;
 use futures_util::{StreamExt, lock::Mutex};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use reqwest::StatusCode;
 use std::{cmp::min, sync::Arc};
 use tokio::{
     fs::File,
@@ -35,54 +36,62 @@ pub async fn download_per_page(
         let file = File::create(format!("{}/{}", outdir, fname)).await?;
         let mut file = BufWriter::new(file);
 
-        if let Ok(res) = client.get(&path).send().await {
-            let total_size = res.content_length().context("Cannot get total size")?;
+        loop {
+            if let Ok(res) = client.get(&path).send().await {
+                let total_size = res.content_length().context("Cannot get total size")?;
+                // prevent too many requests: wait 2 secs and re-download
+                if StatusCode::TOO_MANY_REQUESTS == res.status() {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    continue;
+                }
 
-            let pb = mc.lock().await.add(ProgressBar::new(total_size));
-            pb.set_style(ProgressStyle::default_bar()
+                let pb = mc.lock().await.add(ProgressBar::new(total_size));
+                pb.set_style(ProgressStyle::default_bar()
                 .template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
                 .unwrap()
                 .progress_chars("#>-"));
 
-            pb.set_message(format!(
-                "[{}/{}] {} {}",
-                page.current,
-                page.total,
-                fname.purple(),
-                "downloading...".blue().bold()
-            ));
+                pb.set_message(format!(
+                    "[{}/{}] {} {}",
+                    page.current,
+                    page.total,
+                    fname.purple(),
+                    "downloading...".blue().bold()
+                ));
 
-            let mut stream = res.bytes_stream();
-            let mut downloaded: u64 = 0;
+                let mut stream = res.bytes_stream();
+                let mut downloaded: u64 = 0;
 
-            while let Some(item) = stream.next().await {
-                match item {
-                    Ok(item) => {
-                        file.write_all(&item)
-                            .await
-                            .context("Failed writes bytes to file")?;
-                        let new = min(downloaded + (item.len() as u64), total_size);
-                        downloaded = new;
-                        pb.set_position(new);
+                while let Some(item) = stream.next().await {
+                    match item {
+                        Ok(item) => {
+                            file.write_all(&item)
+                                .await
+                                .context("Failed writes bytes to file")?;
+                            let new = min(downloaded + (item.len() as u64), total_size);
+                            downloaded = new;
+                            pb.set_position(new);
+                        }
+                        Err(_) => continue,
                     }
-                    Err(_) => continue,
                 }
+
+                file.flush().await.context("file.flush")?;
+
+                pb.finish_with_message(format!(
+                    "[{}/{}] {} {}",
+                    page.current,
+                    page.total,
+                    fname.purple(),
+                    "success".green().bold()
+                ));
+
+                sleep(Duration::from_secs(1)).await;
+                pb.finish_and_clear();
+            } else {
+                return Err(anyhow::anyhow!("Failed to send request for {}", path));
             }
-
-            file.flush().await.context("file.flush")?;
-
-            pb.finish_with_message(format!(
-                "[{}/{}] {} {}",
-                page.current,
-                page.total,
-                fname.purple(),
-                "success".green().bold()
-            ));
-
-            sleep(Duration::from_secs(1)).await;
-            pb.finish_and_clear();
-        } else {
-            return Err(anyhow::anyhow!("Failed to send request for {}", path));
+            break;
         }
     }
 
