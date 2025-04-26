@@ -36,11 +36,16 @@ pub async fn download_per_page(
         let file = File::create(format!("{}/{}", outdir, fname)).await?;
         let mut file = BufWriter::new(file);
 
+        let mut retry = 3;
         loop {
             if let Ok(res) = client.get(&path).send().await {
                 let total_size = res.content_length().context("Cannot get total size")?;
-                // prevent too many requests: wait 2 secs and re-download
-                if StatusCode::TOO_MANY_REQUESTS == res.status() {
+                // prevent too many requests or bad gateway: wait 2 secs and re-download
+                if StatusCode::OK != res.status() {
+                    if retry == 0 {
+                        break;
+                    }
+                    retry -= 1;
                     tokio::time::sleep(Duration::from_secs(2)).await;
                     continue;
                 }
