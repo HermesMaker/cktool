@@ -24,6 +24,7 @@ pub async fn download_per_page(
     outdir: &str,
     m: Arc<Mutex<MultiProgress>>,
     page: PageStatus,
+    retry: u32,
 ) -> Result<()> {
     let posts = get_posts_from_page(url).await?;
 
@@ -36,7 +37,7 @@ pub async fn download_per_page(
         let file = File::create(format!("{}/{}", outdir, fname)).await?;
         let mut file = BufWriter::new(file);
 
-        let mut retry = 3;
+        let mut retry = retry;
         loop {
             if let Ok(res) = client.get(&path).send().await {
                 let total_size = res.content_length().context("Cannot get total size")?;

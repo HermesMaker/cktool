@@ -27,6 +27,9 @@ struct Args {
     /// specific page downloading.
     #[arg(short,long, default_value=None, value_name="Number")]
     page: Option<u64>,
+    /// re-download when failed
+    #[arg(short, long, default_value=None)]
+    retry: Option<u32>,
 }
 
 #[tokio::main]
@@ -61,8 +64,12 @@ async fn main() {
             } else {
                 link.page = Page::All
             }
+            let retry = match args.retry {
+                Some(re) => re,
+                None => args.task as u32,
+            };
             // Start the download process with specified parameters
-            let _ = downloader::all(link, args.task, &out_dir).await;
+            let _ = downloader::all(link, args.task, &out_dir, retry).await;
             println!("Download success to {}", out_dir.blue());
         } else {
             eprintln!("Url is invalid");

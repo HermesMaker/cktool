@@ -14,7 +14,7 @@ use super::{download_per_page::download_per_page, page_status::PageStatus};
 /// * `split_dir` - Whether to split downloads into separate directories
 /// * `task_limit` - Maximum number of concurrent download tasks
 /// * `outdir` - Output directory for downloaded files
-pub async fn all(link: Link, task_limit: usize, outdir: &str) -> Result<()> {
+pub async fn all(link: Link, task_limit: usize, outdir: &str, retry: u32) -> Result<()> {
     let m = Arc::new(Mutex::from(MultiProgress::new()));
 
     let outdir = outdir.to_string();
@@ -46,7 +46,9 @@ pub async fn all(link: Link, task_limit: usize, outdir: &str) -> Result<()> {
             let page = page.clone();
 
             multi_task.spawn(async move {
-                if let Err(e) = download_per_page(&link.post_id(&pid), &outdir, m, page).await {
+                if let Err(e) =
+                    download_per_page(&link.post_id(&pid), &outdir, m, page, retry).await
+                {
                     eprintln!("Error downloading page: {}", e);
                 }
             });
