@@ -1,5 +1,6 @@
 // Import required dependencies for CLI argument parsing and shell completion
 use cktool::{
+    declare::{RetryType, TASK, TaskType},
     downloader,
     link::{Link, Page},
 };
@@ -13,11 +14,11 @@ use std::io;
 #[command(name = "cktool", version, about)]
 struct Args {
     /// Output directory for downloaded content
-    #[arg(short, long)]
+    #[arg(short, long, value_name = "Folder")]
     out: Option<String>,
     /// Number of concurrent download tasks
-    #[arg(short, long, default_value_t = 8)]
-    task: usize,
+    #[arg(short, long, default_value_t = TASK)]
+    task: TaskType,
     /// URL of the profile account to download content from
     #[arg(short, long)]
     url: Option<String>,
@@ -27,9 +28,9 @@ struct Args {
     /// specific page downloading.
     #[arg(short,long, default_value=None, value_name="Number")]
     page: Option<u64>,
-    /// re-download when failed
+    /// specify the maximum number of re-download when failed.
     #[arg(short, long, default_value=None)]
-    retry: Option<u32>,
+    retry: Option<RetryType>,
 }
 
 #[tokio::main]
@@ -66,7 +67,7 @@ async fn main() {
             }
             let retry = match args.retry {
                 Some(re) => re,
-                None => args.task as u32,
+                None => args.task as RetryType,
             };
             // Start the download process with specified parameters
             let _ = downloader::all(link, args.task, &out_dir, retry).await;

@@ -10,6 +10,8 @@ use tokio::{
     time::{Duration, sleep},
 };
 
+use crate::declare::{ERROR_REQUEST_DELAY_SEC, RetryType, TOO_MANY_REQUESTS_DELAY_SEC};
+
 use super::{get_posts_from_page::get_posts_from_page, page_status::PageStatus};
 
 /// Downloads all files from a specific page
@@ -24,7 +26,7 @@ pub async fn download_per_page(
     outdir: &str,
     m: Arc<Mutex<MultiProgress>>,
     page: PageStatus,
-    retry: u32,
+    retry: RetryType,
 ) -> Result<()> {
     let posts = get_posts_from_page(url).await?;
 
@@ -41,13 +43,18 @@ pub async fn download_per_page(
         loop {
             if let Ok(res) = client.get(&path).send().await {
                 let total_size = res.content_length().context("Cannot get total size")?;
-                // prevent too many requests or bad gateway: wait 2 secs and re-download
+                // prevent too many requests
+                if StatusCode::TOO_MANY_REQUESTS == res.status() {
+                    tokio::time::sleep(Duration::from_secs(TOO_MANY_REQUESTS_DELAY_SEC)).await;
+                    continue;
+                }
+                // prevent bad gateway: wait 2 secs and re-download
                 if StatusCode::OK != res.status() {
                     if retry == 0 {
                         break;
                     }
                     retry -= 1;
-                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    tokio::time::sleep(Duration::from_secs(ERROR_REQUEST_DELAY_SEC)).await;
                     continue;
                 }
 

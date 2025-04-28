@@ -1,4 +1,8 @@
-use crate::{fetch::fetch_page, link::Link};
+use crate::{
+    declare::{RetryType, TaskType},
+    fetch::fetch_page,
+    link::Link,
+};
 use anyhow::Result;
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
@@ -14,7 +18,7 @@ use super::{download_per_page::download_per_page, page_status::PageStatus};
 /// * `split_dir` - Whether to split downloads into separate directories
 /// * `task_limit` - Maximum number of concurrent download tasks
 /// * `outdir` - Output directory for downloaded files
-pub async fn all(link: Link, task_limit: usize, outdir: &str, retry: u32) -> Result<()> {
+pub async fn all(link: Link, task_limit: TaskType, outdir: &str, retry: RetryType) -> Result<()> {
     let m = Arc::new(Mutex::from(MultiProgress::new()));
 
     let outdir = outdir.to_string();
