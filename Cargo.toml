@@ -11,12 +11,12 @@ categories = ["command-line-utilities"]
 include = ["src/*"]
 
 [dependencies]
-clap = { version = "4.5.34", features = ["derive"] }
+clap = { version = "4.5.37", features = ["derive"] }
 clap_complete = "4.5.47"
 colored = "3.0.0"
 futures-util = "0.3.31"
 indicatif = "0.17.11"
 json = "0.12.4"
 reqwest = { version = "0.12.15", features = ["stream"] }
-tokio = { version = "1.44.1", features = ["full"] }
-anyhow = "1.0.80"
+tokio = { version = "1.44.2", features = ["full"] }
+anyhow = "1.0.98"
