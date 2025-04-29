@@ -19,11 +19,11 @@ struct Args {
     /// Number of concurrent download tasks
     #[arg(short, long, default_value_t = TASK)]
     task: TaskType,
-    /// URL of the profile account to download content from
-    #[arg(short, long)]
-    url: Option<String>,
+    /// URL of the profile account or post to download content from
+    #[arg(value_name = "url")]
+    url: String,
     /// Generate shell completion scripts for the specified shell
-    #[arg(short, long)]
+    #[arg(short, long, value_name = "Shell")]
     completion: Option<Shell>,
     /// specific page downloading.
     #[arg(short,long, default_value=None, value_name="Number")]
@@ -45,38 +45,33 @@ async fn main() {
     }
 
     // Process download request if URL is provided
-    if let Some(url) = args.url {
-        // Determine output directory - use URL's last segment if not specified
-        let out_dir = match args.out {
-            Some(path) => path,
-            None => {
-                let url = url.split("/").last().unwrap().to_string();
-                url.split("?")
-                    .collect::<Vec<&str>>()
-                    .first()
-                    .expect("cannot parse url")
-                    .to_string()
-            }
-        };
-        if let Ok(mut link) = Link::parse(url) {
-            if let Some(page) = args.page {
-                // first page is zero.
-                link.page = Page::One(page - 1);
-            } else {
-                link.page = Page::All
-            }
-            let retry = match args.retry {
-                Some(re) => re,
-                None => args.task as RetryType,
-            };
-            // Start the download process with specified parameters
-            let _ = downloader::all(link, args.task, &out_dir, retry).await;
-            println!("Download success to {}", out_dir.blue());
-        } else {
-            eprintln!("Url is invalid");
+    // Determine output directory - use URL's last segment if not specified
+    let out_dir = match args.out {
+        Some(path) => path,
+        None => {
+            let url = args.url.split("/").last().unwrap().to_string();
+            url.split("?")
+                .collect::<Vec<&str>>()
+                .first()
+                .expect("cannot parse url")
+                .to_string()
         }
+    };
+    if let Ok(mut link) = Link::parse(args.url) {
+        if let Some(page) = args.page {
+            // first page is zero.
+            link.page = Page::One(page - 1);
+        } else {
+            link.page = Page::All
+        }
+        let retry = match args.retry {
+            Some(re) => re,
+            None => args.task as RetryType,
+        };
+        // Start the download process with specified parameters
+        let _ = downloader::all(link, args.task, &out_dir, retry).await;
+        println!("Download success to {}", out_dir.blue());
     } else {
-        // Show help message if no URL is provided
-        let _ = Args::command().print_help();
+        eprintln!("Url is invalid");
     }
 }

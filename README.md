@@ -44,19 +44,19 @@ cargo binstall cktool
 Download content from a profile using its URL:
 
 ```bash
-cktool --url https://coomer.su/fansly/user/12345
+cktool https://coomer.su/fansly/user/12345
 ```
 
 Download content only single post.
 
 ```bash
-cktool --url https://coomer.su/fansly/user/12345/post/6789
+cktool https://coomer.su/fansly/user/12345/post/6789
 ```
 
 ### Specifying page download (50 posts)
 
 ```bash
-cktool --url https://coomer.su/fansly/user/12345 -p 1
+cktool https://coomer.su/fansly/user/12345 -p 1
 
 ```
 
@@ -65,8 +65,27 @@ cktool --url https://coomer.su/fansly/user/12345 -p 1
 You can specify a custom output directory for the downloaded content:
 
 ```bash
-cktool --url https://coomer.su/fansly/user/12345 --out /path/to/output/directory
+cktool https://coomer.su/fansly/user/12345 --out /path/to/output/directory
 ```
+
+## Advanced usage
+
+### `-t` or `--task` option
+
+```bash
+cktool <url> --task 50
+```
+
+With `task` option you can specify the maximum number of posts that can be downloaded at once. Increasing the number can reduce time, but increases the risk of
+<b>too many requests errors</b>.
+
+### `-r` or `--retry` option
+
+```bash
+cktool <url> --retry 20
+```
+
+With `retry` option you can specify the maximum number of re-downloads when found any error. To reduce the chances of failed downloads.
 
 ## Contributing
 
