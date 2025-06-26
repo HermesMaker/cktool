@@ -68,6 +68,7 @@ impl Link {
     pub fn parse(url: String) -> Result<Self> {
         // convert to api path and clear params in url.
         let url = url.replace(".su", ".su/api/v1");
+        // remove parameters from url
         let url = url.split("?").collect::<Vec<&str>>();
         let url = url.first().context("Invalid domain")?.to_string();
 
@@ -97,18 +98,22 @@ impl Link {
     pub fn set_page(&mut self, page_number: u64) {
         self.page = Page::One(page_number);
     }
+    /// produces Url with post id
+    ///
+    /// example returned value `https://example.com/user/postid/`
     pub fn post_id(&self, post_id: &String) -> String {
         if let UrlType::Post = self.typ {
             return self.url.clone();
         }
         format!("{}/post/{}", self.url, post_id)
     }
+
     pub fn get_post_id(&self) -> Option<&str> {
         if let UrlType::Post = self.typ {
             let mut url_split = self.url.split("/").collect::<Vec<&str>>();
             if let Some(post_id) = url_split.pop() {
                 // check if last element is empty &str
-                if post_id.len() == 0 {
+                if post_id.is_empty() {
                     return url_split.pop();
                 }
                 return Some(post_id);
