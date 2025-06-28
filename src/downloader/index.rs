@@ -2,13 +2,13 @@ use crate::{
     declare::{RetryType, TaskType},
     link::Link,
 };
-use anyhow::{Context, Ok, Result};
+use anyhow::{Context, Result};
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
 use std::sync::Arc;
 use tokio::fs;
 
-use super::page_status::PageStatus;
+use super::{info::DownloaderInfo, page_status::StatusBar};
 
 #[derive(Clone)]
 pub struct Downloader {
@@ -17,6 +17,7 @@ pub struct Downloader {
     pub outdir: String,
     pub retry: RetryType,
     pub multi_progress: Arc<Mutex<MultiProgress>>,
+    pub info: Arc<Mutex<DownloaderInfo>>,
 }
 
 impl Downloader {
@@ -27,6 +28,7 @@ impl Downloader {
             outdir,
             retry,
             multi_progress: Arc::new(Mutex::from(MultiProgress::new())),
+            info: Arc::new(Mutex::new(DownloaderInfo::new())),
         }
     }
 
@@ -43,41 +45,44 @@ impl Downloader {
     }
 
     /// Main function to download all content.
-    pub async fn all(&self) -> Result<()> {
-        let mut posts_id = self.fetch_post_id().await.context("Failed fetch post id")?;
+    pub async fn all(&mut self) -> Result<()> {
+        let posts_id = self.fetch_post_id().await.context("Failed fetch post id")?;
+        let posts_id = Arc::new(Mutex::new(posts_id));
+        let posts_id_total = { posts_id.lock().await.len() };
         fs::create_dir_all(&self.outdir).await?;
 
-        // Process downloads in batches
-        let mut page = PageStatus {
-            current: 0,
-            total: posts_id.len() as u32,
-        };
+        let mut multi_tasks = Vec::new();
 
-        while !posts_id.is_empty() {
-            let mut multi_task = tokio::task::JoinSet::new();
-
-            while let Some(pid) = posts_id.pop() {
-                while multi_task.len() >= self.task_limit {
-                    multi_task.join_next().await.unwrap().unwrap();
-                }
-
-                page.current += 1;
-                let page = page.clone();
-                // create downloader instance to assign to new thread.
-                let downloader_instance = self.clone();
-
-                multi_task.spawn(async move {
-                    if let Err(e) = downloader_instance.download_per_page(pid, page).await {
-                        eprintln!("Error downloading page: {}", e);
+        for _ in 0..self.task_limit {
+            let mut self_instance = self.clone();
+            let info = self.info.clone();
+            let posts_id = posts_id.clone();
+            multi_tasks.push(tokio::spawn(async move {
+                loop {
+                    let (pid, status) = {
+                        let mut posts_id = posts_id.lock().await;
+                        (
+                            posts_id.pop(),
+                            StatusBar {
+                                queues: posts_id.len() as u32,
+                                total: posts_id_total as u32,
+                            },
+                        )
+                    };
+                    if let Some(pid) = pid {
+                        let result = self_instance.download_post(pid, status).await;
+                        {
+                            info.lock().await.integrate(&result);
+                        }
+                    } else {
+                        break;
                     }
-                });
-            }
-
-            while let Some(result) = multi_task.join_next().await {
-                if let Err(err) = result {
-                    eprintln!("Task error: {}", err);
                 }
-            }
+            }));
+        }
+
+        for handle in multi_tasks {
+            handle.await.unwrap()
         }
 
         Ok(())

@@ -4,3 +4,9 @@ pub struct PageStatus {
     pub current: u32,
     pub total: u32,
 }
+
+#[derive(Clone)]
+pub struct StatusBar {
+    pub queues: u32,
+    pub total: u32,
+}

@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
 use colored::Colorize;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -12,31 +12,62 @@ use tokio::{
 
 use crate::declare::{ERROR_REQUEST_DELAY_SEC, TOO_MANY_REQUESTS_DELAY_SEC};
 
-use super::{Downloader, page_status::PageStatus};
+use super::{Downloader, info::DownloaderInfo, page_status::StatusBar};
 
 impl Downloader {
-    /// Downloads all files from a specific page
+    /// Downloads all files in a specific post
     ///
     /// # Arguments
     /// * `pid` - post id to download
     /// * `page` - Current page information for progress display
-    pub async fn download_per_page(&self, pid: String, page: PageStatus) -> Result<()> {
+    pub async fn download_post(&mut self, pid: String, status: StatusBar) -> DownloaderInfo {
         let url = self.link.post_id(&pid);
-        let posts = self.get_posts_from_page(&url).await?;
+        let posts = match self.get_posts_from_page(&url).await {
+            Ok(v) => v,
+            Err(_) => {
+                {
+                    self.info
+                        .lock()
+                        .await
+                        .add_failed_file(url.replace("api/v1/", ""));
+                }
+
+                return DownloaderInfo::new();
+            }
+        };
+
+        let mut download_info = DownloaderInfo::new();
 
         for path in posts {
             let outdir = self.outdir.clone();
             let mc = self.multi_progress.clone();
-            let fname = path.split("/").last().context("Invalid file path")?;
+            let fname = if let Ok(v) = path.split("/").last().context("Invalid file path") {
+                v
+            } else {
+                eprintln!("Invalid file path");
+                continue;
+            };
 
             let client = reqwest::Client::new();
-            let file = File::create(format!("{}/{}", outdir, fname)).await?;
+            let file = if let Ok(v) = File::create(format!("{}/{}", outdir, fname)).await {
+                v
+            } else {
+                continue;
+            };
             let mut file = BufWriter::new(file);
 
             let mut retry = self.retry;
+            let mut retry_request = self.retry;
             loop {
                 if let Ok(res) = client.get(&path).send().await {
-                    let total_size = res.content_length().context("Cannot get total size")?;
+                    let total_size = match res.content_length().context("Cannot get total size") {
+                        Ok(v) => v,
+                        Err(_) => {
+                            eprintln!("Failed receive file size");
+                            download_info.add_failed_file(path);
+                            break;
+                        }
+                    };
                     // prevent too many requests
                     if StatusCode::TOO_MANY_REQUESTS == res.status() {
                         tokio::time::sleep(Duration::from_secs(TOO_MANY_REQUESTS_DELAY_SEC)).await;
@@ -45,6 +76,7 @@ impl Downloader {
                     // prevent bad gateway: wait 2 secs and re-download
                     if StatusCode::OK != res.status() {
                         if retry == 0 {
+                            download_info.add_failed_file(path);
                             break;
                         }
                         retry -= 1;
@@ -60,8 +92,8 @@ impl Downloader {
 
                     pb.set_message(format!(
                         "[{}/{}] {} {}",
-                        page.current,
-                        page.total,
+                        status.total,
+                        status.queues,
                         fname.purple(),
                         "downloading...".blue().bold()
                     ));
@@ -72,23 +104,31 @@ impl Downloader {
                     while let Some(item) = stream.next().await {
                         match item {
                             Ok(item) => {
-                                file.write_all(&item)
-                                    .await
-                                    .context("Failed writes bytes to file")?;
+                                if (file.write_all(&item).await).is_err() {
+                                    eprintln!("Failed writes bytes to file");
+                                    download_info.add_failed_file(path.to_string());
+                                    break;
+                                }
+
                                 let new = min(downloaded + (item.len() as u64), total_size);
                                 downloaded = new;
                                 pb.set_position(new);
                             }
-                            Err(_) => continue,
+                            Err(_) => {
+                                download_info.add_failed_file(path.clone());
+                                continue;
+                            }
                         }
                     }
 
-                    file.flush().await.context("file.flush")?;
+                    download_info.add_file_size(total_size);
+                    download_info.add_success_file(1);
+                    let _ = file.flush().await.context("file.flush");
 
                     pb.finish_with_message(format!(
                         "[{}/{}] {} {}",
-                        page.current,
-                        page.total,
+                        status.total,
+                        status.queues,
                         fname.purple(),
                         "success".green().bold()
                     ));
@@ -96,12 +136,18 @@ impl Downloader {
                     sleep(Duration::from_secs(1)).await;
                     pb.finish_and_clear();
                 } else {
-                    return Err(anyhow::anyhow!("Failed to send request for {}", path));
+                    if retry_request == 0 {
+                        download_info.add_failed_file(path);
+                        break;
+                    }
+                    retry_request -= 1;
+                    tokio::time::sleep(Duration::from_secs(ERROR_REQUEST_DELAY_SEC)).await;
+                    continue;
                 }
                 break;
             }
         }
 
-        Ok(())
+        download_info
     }
 }

@@ -1,9 +1,11 @@
 // private
-mod download_per_page;
+mod download_post;
 mod fetch_pages;
 mod get_posts_from_page;
 mod index;
+mod info;
 mod page_status;
+mod print;
 
 // public
 pub use index::Downloader;

@@ -1,4 +1,6 @@
-use crate::link::Page;
+use std::{thread, time::Duration};
+
+use crate::{declare, link::Page};
 use anyhow::Result;
 use colored::Colorize;
 
@@ -14,6 +16,7 @@ impl Downloader {
             link.set_page(0);
         }
 
+        let mut retry = self.retry;
         println!("Start fetching pages");
 
         // Fetch all post IDs from paginated API
@@ -39,6 +42,14 @@ impl Downloader {
                         if let Ok(obj) = json::parse(&content) {
                             posts_id.extend((0..obj.len()).map(|i| obj[i]["id"].to_string()));
                         } else {
+                            if retry > 0 {
+                                println!(" -- {} {}", "RETRY PARSE JSON".yellow(), confirm);
+                                retry -= 1;
+                                thread::sleep(Duration::from_secs(
+                                    declare::TOO_MANY_REQUESTS_DELAY_SEC,
+                                ));
+                                continue;
+                            }
                             println!("Cannot parse JSON: {}", content);
                         }
                     }

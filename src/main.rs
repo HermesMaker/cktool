@@ -6,7 +6,6 @@ use cktool::{
 };
 use clap::{CommandFactory, Parser, command};
 use clap_complete::{Shell, generate};
-use colored::Colorize;
 use std::io;
 
 /// Command line arguments structure for the cktool
@@ -69,9 +68,12 @@ async fn main() {
             None => args.task as RetryType,
         };
         // Start the download process with specified parameters
-        let downloader = Downloader::new(link, args.task, out_dir.clone(), retry);
-        if downloader.all().await.is_ok() {
-            println!("Download success to {}", out_dir.blue());
+        let mut downloader = Downloader::new(link, args.task, out_dir.clone(), retry);
+        match downloader.all().await {
+            Ok(_) => {
+                downloader.print_reports().await;
+            }
+            Err(err) => eprintln!("{}", err),
         }
     } else {
         eprintln!("Url is invalid");
