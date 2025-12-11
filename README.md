@@ -96,4 +96,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENSE](LICENSE) file for details.
 
 ## Support me                                                                                                                                     
--bitcoin: [14wptNGSb4sVfNnMLnKrb3Vbntd1FYBxyn](bitcoin:14wptNGSb4sVfNnMLnKrb3Vbntd1FYBxyn)
+-bitcoin: [12ukxPmuXkyi4QHrxwZgaok2yiD6GrP39A](bitcoin:12ukxPmuXkyi4QHrxwZgaok2yiD6GrP39A)
