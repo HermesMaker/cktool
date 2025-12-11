@@ -10,7 +10,10 @@ use tokio::{
     time::{Duration, sleep},
 };
 
-use crate::declare::{ERROR_REQUEST_DELAY_SEC, TOO_MANY_REQUESTS_DELAY_SEC};
+use crate::{
+    declare::{ERROR_REQUEST_DELAY_SEC, TOO_MANY_REQUESTS_DELAY_SEC},
+    request,
+};
 
 use super::{Downloader, info::DownloaderInfo, page_status::StatusBar};
 
@@ -20,7 +23,11 @@ impl Downloader {
     /// # Arguments
     /// * `pid` - post id to download
     /// * `page` - Current page information for progress display
-    pub async fn download_post(&mut self, pid: String, status: StatusBar) -> DownloaderInfo {
+    pub async fn download_post(
+        &mut self,
+        pid: String,
+        status: StatusBar,
+    ) -> anyhow::Result<DownloaderInfo> {
         let url = self.link.post_id(&pid);
         let posts = match self.get_posts_from_page(&url).await {
             Ok(v) => v,
@@ -32,7 +39,7 @@ impl Downloader {
                         .add_failed_file(url.replace("api/v1/", ""));
                 }
 
-                return DownloaderInfo::new();
+                return Ok(DownloaderInfo::new());
             }
         };
 
@@ -48,7 +55,7 @@ impl Downloader {
                 continue;
             };
 
-            let client = reqwest::Client::new();
+            let client = request::new()?;
             let file = if let Ok(v) = File::create(format!("{}/{}", outdir, fname)).await {
                 v
             } else {
@@ -148,6 +155,6 @@ impl Downloader {
             }
         }
 
-        download_info
+        Ok(download_info)
     }
 }

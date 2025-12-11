@@ -1,4 +1,5 @@
-use anyhow::{Context, Ok, Result};
+use anyhow::{Ok, Result};
+use url::Url;
 
 /// specific page download.
 #[derive(Clone, Debug)]
@@ -46,7 +47,7 @@ impl Link {
         }
         match self.page {
             Page::All => self.url.clone(),
-            Page::One(page_number) => format!("{}?o={}", self.url, page_number * 50),
+            Page::One(page_number) => format!("{}/posts?o={}", self.url, page_number * 50),
         }
     }
     /// create instance of Link.
@@ -67,17 +68,15 @@ impl Link {
     /// * `Result<Self>` - Returns Ok(Link) if parsing is successful, Err otherwise
     pub fn parse(url: String) -> Result<Self> {
         // convert to api path and clear params in url.
-        let url = url.replace(".su", ".su/api/v1");
-        // remove parameters from url
-        let url = url.split("?").collect::<Vec<&str>>();
-        let url = url.first().context("Invalid domain")?.to_string();
+        let mut parsed_url = Url::parse(url.as_str())?;
 
-        let domain = url.split(".su").collect::<Vec<&str>>();
-        let domain = domain.first().context("Invalid domain")?;
+        parsed_url.set_path(format!("/api/v1{}", parsed_url.path()).as_str());
+        // remove parameters from url
+        parsed_url.set_query(None);
 
         Ok(Self::new(
-            format!("{}.su", domain),
-            url.clone(),
+            parsed_url.origin().unicode_serialization(),
+            parsed_url.to_string(),
             Page::All,
             UrlType::parse(&url),
         ))
@@ -97,6 +96,10 @@ impl Link {
     }
     pub fn set_page(&mut self, page_number: u64) {
         self.page = Page::One(page_number);
+    }
+
+    pub fn set_url(&mut self, url: String) {
+        self.url = url;
     }
     /// produces Url with post id
     ///

@@ -45,7 +45,7 @@ impl Downloader {
     }
 
     /// Main function to download all content.
-    pub async fn all(&mut self) -> Result<()> {
+    pub async fn all(&mut self) -> anyhow::Result<()> {
         let posts_id = self.fetch_post_id().await.context("Failed fetch post id")?;
         let posts_id = Arc::new(Mutex::new(posts_id));
         let posts_id_total = { posts_id.lock().await.len() };
@@ -70,8 +70,7 @@ impl Downloader {
                         )
                     };
                     if let Some(pid) = pid {
-                        let result = self_instance.download_post(pid, status).await;
-                        {
+                        if let Ok(result) = self_instance.download_post(pid, status).await {
                             info.lock().await.integrate(&result);
                         }
                     } else {

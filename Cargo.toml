@@ -1,7 +1,7 @@
 [package]
 name = "cktool"
 description = "coomer.su and kemono.su downloader tool"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2024"
 license = "GPL-3.0-only"
 repository = "https://github.com/HermesMaker/cktool"
@@ -11,13 +11,14 @@ categories = ["command-line-utilities"]
 include = ["src/*"]
 
 [dependencies]
-clap = { version = "4.5.40", features = ["derive"] }
-clap_complete = "4.5.54"
+clap = { version = "4.5.53", features = ["derive"] }
+clap_complete = "4.5.61"
 colored = "3.0.0"
 futures-util = "0.3.31"
-indicatif = "0.18.0"
+indicatif = "0.18.3"
 json = "0.12.4"
-reqwest = { version = "0.12.22", features = ["stream"] }
-tokio = { version = "1.46.1", features = ["full"] }
-anyhow = "1.0.98"
+reqwest = { version = "0.12.25", features = ["stream", "gzip"] }
+tokio = { version = "1.48.0", features = ["full"] }
+anyhow = "1.0.100"
 size = "0.5.0"
+url = "2.5.7"

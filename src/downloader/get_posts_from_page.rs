@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 use json::JsonValue;
 
-use crate::declare;
+use crate::{declare, request};
 
 use super::Downloader;
 
@@ -23,7 +23,8 @@ impl Downloader {
         let mut json_parse_retry = self.retry;
         let mut http_retry = self.retry;
         loop {
-            let res = match reqwest::get(url).await {
+            let client = request::new()?;
+            let res = match client.get(url).send().await {
                 Ok(v) => v,
                 Err(_) => {
                     if !http_retry == 0 {

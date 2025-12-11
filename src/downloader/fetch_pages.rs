@@ -1,8 +1,9 @@
 use std::{thread, time::Duration};
 
-use crate::{declare, link::Page};
+use crate::{declare, link::Page, request};
 use anyhow::Result;
 use colored::Colorize;
+use reqwest::StatusCode;
 
 use super::Downloader;
 
@@ -23,10 +24,10 @@ impl Downloader {
         loop {
             print!("fetching {}", link.url().purple());
 
-            match reqwest::get(&link.url()).await {
+            let client = request::new()?;
+            match client.get(link.url()).send().await {
                 Ok(r) => {
-                    let len = r.content_length().unwrap_or(0);
-                    if len < 10 {
+                    if r.status() != StatusCode::OK {
                         confirm += 1;
                         if confirm < 3 {
                             println!(" -- {} {}", "CONFIRM".yellow(), confirm);
