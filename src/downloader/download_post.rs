@@ -21,7 +21,7 @@ const IMAGE_EXTENSIONS: &[&str] = &[
     "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg", "heic",
 ];
 const VIDEO_EXTENSIONS: &[&str] = &[
-    "mp4", "webm", "mkv", "avi", "mov", "flv", "wmv", "mpg", "mpeg",
+    "mp4", "webm", "mkv", "avi", "mov", "flv", "wmv", "mpg", "mpeg", "m4v",
 ];
 
 use super::{Downloader, info::DownloaderInfo, page_status::StatusBar};
