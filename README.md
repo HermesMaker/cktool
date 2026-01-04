@@ -96,7 +96,11 @@ cktool <url> --video-only
 ```bash
 cktool <url> --image-only
 ```
+### `--verbose` option
 
+```bash
+cktool <url> --verbose
+```
 
 ## Contributing
 
