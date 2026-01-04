@@ -85,7 +85,18 @@ With `task` option you can specify the maximum number of posts that can be downl
 cktool <url> --retry 20
 ```
 
-With `retry` option you can specify the maximum number of re-downloads when found any error. To reduce the chances of failed downloads.
+### `-v` or `--video-only` option
+
+```bash
+cktool <url> --video-only
+```
+
+### `-i` or `--image-only` option
+
+```bash
+cktool <url> --image-only
+```
+
 
 ## Contributing
 
