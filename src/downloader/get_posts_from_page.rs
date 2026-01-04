@@ -55,6 +55,12 @@ impl Downloader {
                 }
             };
 
+            // extract creator name for logs
+            if self.creator_name.lock().await.is_none() {
+                if let Some(creator_name) = obj["user"]["name"].as_str() {
+                    *self.creator_name.lock().await = Some(creator_name.to_string());
+                }
+            }
             let mut is_skip = false;
             // Add attachments
             if let JsonValue::Array(attachments) = &obj["attachments"] {
