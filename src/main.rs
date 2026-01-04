@@ -30,6 +30,12 @@ struct Args {
     /// specify the maximum number of re-download when failed.
     #[arg(short, long, default_value=None)]
     retry: Option<RetryType>,
+    /// Download only video files
+    #[arg(short = 'v', long, default_value_t = false)]
+    video_only: bool,
+    /// Download only image files
+    #[arg(short = 'i', long, default_value_t = false)]
+    image_only: bool,
 }
 
 #[tokio::main]
@@ -44,6 +50,10 @@ async fn main() {
     }
 
     if let Some(url) = args.url {
+        if args.video_only && args.image_only {
+            eprintln!("Error: Cannot use --video-only and --image-only together.");
+            return;
+        }
         // Process download request if URL is provided
         // Determine output directory - use URL's last segment if not specified
         let out_dir = match args.out {
@@ -69,7 +79,8 @@ async fn main() {
                 None => args.task as RetryType,
             };
             // Start the download process with specified parameters
-            let mut downloader = Downloader::new(link, args.task, out_dir.clone(), retry);
+            let mut downloader =
+                Downloader::new(link, args.task, out_dir.clone(), retry, args.video_only, args.image_only);
             match downloader.all().await {
                 Ok(_) => {
                     downloader.print_reports().await;

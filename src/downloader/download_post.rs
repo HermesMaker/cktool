@@ -14,6 +14,10 @@ use crate::{
     declare::{ERROR_REQUEST_DELAY_SEC, TOO_MANY_REQUESTS_DELAY_SEC},
     request,
 };
+use std::path::Path;
+
+const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg", "heic"];
+const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "flv", "wmv", "mpg", "mpeg"];
 
 use super::{Downloader, info::DownloaderInfo, page_status::StatusBar};
 
@@ -54,6 +58,29 @@ impl Downloader {
                 eprintln!("Invalid file path");
                 continue;
             };
+
+            // Filtering logic
+            let file_extension = Path::new(&fname)
+                .extension()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_lowercase());
+
+            let mut skip_file = false;
+            if let Some(ext) = &file_extension {
+                if self.video_only && !VIDEO_EXTENSIONS.contains(&ext.as_str()) {
+                    skip_file = true;
+                } else if self.image_only && !IMAGE_EXTENSIONS.contains(&ext.as_str()) {
+                    skip_file = true;
+                }
+            } else if self.video_only || self.image_only {
+                // If there's a filter but no extension, we skip.
+                skip_file = true;
+            }
+
+            if skip_file {
+                download_info.add_skip_file(path.clone()); // Assuming add_skipped_file exists or similar
+                continue;
+            }
 
             let client = request::new()?;
             let file = if let Ok(v) = File::create(format!("{}/{}", outdir, fname)).await {

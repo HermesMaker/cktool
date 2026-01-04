@@ -16,17 +16,28 @@ pub struct Downloader {
     pub task_limit: TaskType,
     pub outdir: String,
     pub retry: RetryType,
+    pub video_only: bool,
+    pub image_only: bool,
     pub multi_progress: Arc<Mutex<MultiProgress>>,
     pub info: Arc<Mutex<DownloaderInfo>>,
 }
 
 impl Downloader {
-    pub fn new(link: Link, task_limit: TaskType, outdir: String, retry: RetryType) -> Self {
+    pub fn new(
+        link: Link,
+        task_limit: TaskType,
+        outdir: String,
+        retry: RetryType,
+        video_only: bool,
+        image_only: bool,
+    ) -> Self {
         Self {
             link,
             task_limit,
             outdir,
             retry,
+            video_only,
+            image_only,
             multi_progress: Arc::new(Mutex::from(MultiProgress::new())),
             info: Arc::new(Mutex::new(DownloaderInfo::new())),
         }
