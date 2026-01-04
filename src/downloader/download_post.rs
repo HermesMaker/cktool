@@ -1,11 +1,12 @@
 use anyhow::Context;
+use chrono::Local;
 use colored::Colorize;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::StatusCode;
 use std::cmp::min;
 use tokio::{
-    fs::File,
+    fs::{File, OpenOptions},
     io::{AsyncWriteExt, BufWriter},
     time::{Duration, sleep},
 };
@@ -16,12 +17,39 @@ use crate::{
 };
 use std::path::Path;
 
-const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg", "heic"];
-const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "flv", "wmv", "mpg", "mpeg"];
+const IMAGE_EXTENSIONS: &[&str] = &[
+    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg", "heic",
+];
+const VIDEO_EXTENSIONS: &[&str] = &[
+    "mp4", "webm", "mkv", "avi", "mov", "flv", "wmv", "mpg", "mpeg",
+];
 
 use super::{Downloader, info::DownloaderInfo, page_status::StatusBar};
 
 impl Downloader {
+    async fn log_status(
+        &self,
+        post_url: &str,
+        file_name: &str,
+        status: &str,
+    ) -> anyhow::Result<()> {
+        if self.verbose {
+            let date = Local::now().format("%Y-%m-%d");
+            let creator = self.creator_name.lock().await.clone().unwrap_or_default();
+            let log_file_name = format!("{}_{}.log", date, creator);
+            let mut file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_file_name)
+                .await?;
+            let log_entry = format!(
+                "Post URL: {}, File: {}, Status: {}\n",
+                post_url, file_name, status
+            );
+            file.write_all(log_entry.as_bytes()).await?;
+        }
+        Ok(())
+    }
     /// Downloads all files in a specific post
     ///
     /// # Arguments
@@ -79,6 +107,7 @@ impl Downloader {
 
             if skip_file {
                 download_info.add_skip_file(path.clone()); // Assuming add_skipped_file exists or similar
+                self.log_status(&url, fname, "skipped").await?;
                 continue;
             }
 
@@ -98,7 +127,8 @@ impl Downloader {
                         Ok(v) => v,
                         Err(_) => {
                             eprintln!("Failed receive file size");
-                            download_info.add_failed_file(path);
+                            download_info.add_failed_file(path.clone());
+                            self.log_status(&url, fname, "failed").await?;
                             break;
                         }
                     };
@@ -110,7 +140,8 @@ impl Downloader {
                     // prevent bad gateway: wait 2 secs and re-download
                     if StatusCode::OK != res.status() {
                         if retry == 0 {
-                            download_info.add_failed_file(path);
+                            download_info.add_failed_file(path.clone());
+                            self.log_status(&url, fname, "failed").await?;
                             break;
                         }
                         retry -= 1;
@@ -141,6 +172,7 @@ impl Downloader {
                                 if (file.write_all(&item).await).is_err() {
                                     eprintln!("Failed writes bytes to file");
                                     download_info.add_failed_file(path.to_string());
+                                    self.log_status(&url, fname, "failed").await?;
                                     break;
                                 }
 
@@ -150,6 +182,7 @@ impl Downloader {
                             }
                             Err(_) => {
                                 download_info.add_failed_file(path.clone());
+                                self.log_status(&url, fname, "failed").await?;
                                 continue;
                             }
                         }
@@ -157,6 +190,7 @@ impl Downloader {
 
                     download_info.add_file_size(total_size);
                     download_info.add_success_file(1);
+                    self.log_status(&url, fname, "success").await?;
                     let _ = file.flush().await.context("file.flush");
 
                     pb.finish_with_message(format!(
@@ -171,7 +205,8 @@ impl Downloader {
                     pb.finish_and_clear();
                 } else {
                     if retry_request == 0 {
-                        download_info.add_failed_file(path);
+                        download_info.add_failed_file(path.clone());
+                        self.log_status(&url, fname, "failed").await?;
                         break;
                     }
                     retry_request -= 1;

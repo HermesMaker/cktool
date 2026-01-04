@@ -20,6 +20,8 @@ pub struct Downloader {
     pub image_only: bool,
     pub multi_progress: Arc<Mutex<MultiProgress>>,
     pub info: Arc<Mutex<DownloaderInfo>>,
+    pub verbose: bool,
+    pub creator_name: Arc<Mutex<Option<String>>>,
 }
 
 impl Downloader {
@@ -30,6 +32,7 @@ impl Downloader {
         retry: RetryType,
         video_only: bool,
         image_only: bool,
+        verbose: bool,
     ) -> Self {
         Self {
             link,
@@ -40,6 +43,8 @@ impl Downloader {
             image_only,
             multi_progress: Arc::new(Mutex::from(MultiProgress::new())),
             info: Arc::new(Mutex::new(DownloaderInfo::new())),
+            verbose,
+            creator_name: Arc::new(Mutex::new(None)),
         }
     }
 

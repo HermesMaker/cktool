@@ -36,6 +36,9 @@ struct Args {
     /// Download only image files
     #[arg(short = 'i', long, default_value_t = false)]
     image_only: bool,
+    /// enable verbose logging
+    #[arg(long, default_value_t = false)]
+    verbose: bool,
 }
 
 #[tokio::main]
@@ -79,8 +82,15 @@ async fn main() {
                 None => args.task as RetryType,
             };
             // Start the download process with specified parameters
-            let mut downloader =
-                Downloader::new(link, args.task, out_dir.clone(), retry, args.video_only, args.image_only);
+            let mut downloader = Downloader::new(
+                link,
+                args.task,
+                out_dir.clone(),
+                retry,
+                args.video_only,
+                args.image_only,
+                args.verbose,
+            );
             match downloader.all().await {
                 Ok(_) => {
                     downloader.print_reports().await;
