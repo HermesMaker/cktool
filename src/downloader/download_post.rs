@@ -93,17 +93,15 @@ impl Downloader {
                 .and_then(|s| s.to_str())
                 .map(|s| s.to_lowercase());
 
-            let mut skip_file = false;
-            if let Some(ext) = &file_extension {
-                if self.video_only && !VIDEO_EXTENSIONS.contains(&ext.as_str()) {
-                    skip_file = true;
-                } else if self.image_only && !IMAGE_EXTENSIONS.contains(&ext.as_str()) {
-                    skip_file = true;
-                }
-            } else if self.video_only || self.image_only {
-                // If there's a filter but no extension, we skip.
-                skip_file = true;
-            }
+            let skip_file = if let Some(ext) = &file_extension
+                && (self.video_only && !VIDEO_EXTENSIONS.contains(&ext.as_str())
+                    || self.image_only && !IMAGE_EXTENSIONS.contains(&ext.as_str()))
+                && (self.video_only || self.image_only)
+            {
+                true
+            } else {
+                false
+            };
 
             if skip_file {
                 download_info.add_skip_file(path.clone()); // Assuming add_skipped_file exists or similar
