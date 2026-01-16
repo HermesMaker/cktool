@@ -3,6 +3,11 @@ use colored::Colorize;
 use size::Size;
 
 impl Downloader {
+    pub async fn failed_file(&self) -> Vec<String> {
+        let info = self.info.lock().await;
+        let failed_file = info.get_failed_file();
+        failed_file.clone()
+    }
     pub async fn print_reports(&self) {
         let info = self.info.lock().await;
 

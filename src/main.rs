@@ -3,8 +3,9 @@ use cktool::{
     declare::{RetryType, TASK, TaskType},
     downloader::Downloader,
     link::{Link, Page},
+    utils::Log,
 };
-use clap::{CommandFactory, Parser, command};
+use clap::{CommandFactory, Parser};
 use clap_complete::{Shell, generate};
 use std::io;
 
@@ -39,6 +40,9 @@ struct Args {
     /// enable verbose logging
     #[arg(long, default_value_t = false)]
     verbose: bool,
+    /// save failed posts to file
+    #[arg(long,short, value_name="File", default_value = None)]
+    log: Option<Option<String>>,
 }
 
 #[tokio::main]
@@ -94,6 +98,17 @@ async fn main() {
             match downloader.all().await {
                 Ok(_) => {
                     downloader.print_reports().await;
+                    // if log flag is exist.
+                    if let Some(log) = args.log {
+                        let log_file = if let Some(log) = log {
+                            log
+                        } else {
+                            // default log's file name.
+                            "failed.log".to_string()
+                        };
+                        let failed_files = downloader.failed_file().await;
+                        Log::save_failed(&failed_files, &log_file).await;
+                    }
                 }
                 Err(err) => eprintln!("{}", err),
             }
