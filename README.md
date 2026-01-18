@@ -73,6 +73,10 @@ cktool https://coomer.su/fansly/user/12345 --out /path/to/output/directory
 
 You can save failed URLs to file with `--log` flag. To re-download with `ckret` command.
 
+When each URL is successfully downloaded, `ckret` will add a `#` in front of URL.
+This means that if you encounter failed download, you can run `ckret` command again,
+and any links with a `#` in front will be skipped.
+
 ```bash
 cktool https://coomer.su/fansly/user/12345 --log # default output file is ./failed.log
 # or

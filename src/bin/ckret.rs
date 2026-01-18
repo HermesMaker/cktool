@@ -54,19 +54,22 @@ async fn main() -> anyhow::Result<()> {
             .context("Failed create directory")?;
     }
 
-    for url in &mut urls {
-        if let Some(first_char) = url.chars().next()
+    let url_len = urls.len();
+    for i in 0..url_len {
+        if let Some(first_char) = urls[i].chars().next()
             && first_char == '#'
         {
-            println!("{} {}", "skip".yellow().bold(), url.blue());
+            println!("{} {}", "skip".yellow().bold(), urls[i].blue());
             continue;
         }
-        println!("{}", url);
-        if download(url, retry, &out).await.is_ok() {
-            *url = format!("#{}", url);
+        if download(&urls[i], retry, &out, i as u64).await.is_ok() {
+            urls[i] = format!("#{}", urls[i]);
+            fs::write(&args.file, urls.join("\n")).await?;
+        } else {
+            println!("{} {}", "Failed".red(), urls[i].red());
         }
     }
-    fs::write(&args.file, urls.join("\n")).await?;
+    println!("{}", "Done!".green());
 
     Ok(())
 }
@@ -79,7 +82,7 @@ pub async fn read_file(file: &str) -> anyhow::Result<Vec<String>> {
 }
 
 /// this func use to download each url.
-pub async fn download(url: &str, retry: u32, out: &str) -> anyhow::Result<()> {
+pub async fn download(url: &str, retry: u32, out: &str, index: u64) -> anyhow::Result<()> {
     if let Some(file_name) = url.split("/").last() {
         let client = request::new()?;
 
@@ -115,7 +118,12 @@ pub async fn download(url: &str, retry: u32, out: &str) -> anyhow::Result<()> {
                     continue;
                 }
                 let p = create_progress_bar(total_size);
-                p.set_message(format!("{} {}", "Downloading".blue().bold(), file_name));
+                p.set_message(format!(
+                    "[{}] {} {}",
+                    index,
+                    "Downloading".blue().bold(),
+                    file_name
+                ));
 
                 let mut stream = response.bytes_stream();
                 let mut downloaded: u64 = 0;
@@ -139,7 +147,12 @@ pub async fn download(url: &str, retry: u32, out: &str) -> anyhow::Result<()> {
                 }
 
                 let _ = file.flush().await.context("file.flush");
-                p.finish_with_message(format!("{} {}", "success".green().bold(), file_name));
+                p.finish_with_message(format!(
+                    "[{}] {} {}",
+                    index,
+                    "success".green().bold(),
+                    file_name
+                ));
             } else if retry > 0 {
                 retry -= 1;
                 tokio::time::sleep(Duration::from_secs(ERROR_REQUEST_DELAY_SEC)).await;
