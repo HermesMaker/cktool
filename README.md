@@ -17,6 +17,7 @@ A Rust-based CLI tool for downloading content from coomer.su and kemono.su platf
 1. First, install Rust by following the instructions at [rust-lang.org](https://www.rust-lang.org/learn/get-started)
 
 2. Install cktool using cargo:
+
 ```bash
 cargo install cktool
 ```
@@ -68,6 +69,29 @@ You can specify a custom output directory for the downloaded content:
 cktool https://coomer.su/fansly/user/12345 --out /path/to/output/directory
 ```
 
+### Save failed URLs to file
+
+You can save failed URLs to file with `--log` flag. To re-download with `ckret` command.
+
+```bash
+cktool https://coomer.su/fansly/user/12345 --log # default output file is ./failed.log
+# or
+cktool https://coomer.su/fansly/user/12345 --log fail.txt # custom output file.
+
+```
+
+### `ckret` command
+
+This command works with `failed.log` (Files obtained from the --log flag.) to redownload the failed files.
+
+```bash
+ckret failed.log
+ckret failed.log --out folder # Save downloaded files to specific folder
+ckret failed.log --retry 100 # define retry times when failed.
+
+```
+
+
 ## Advanced usage
 
 ### `-t` or `--task` option
@@ -96,6 +120,7 @@ cktool <url> --video-only
 ```bash
 cktool <url> --image-only
 ```
+
 ### `--verbose` option
 
 ```bash
@@ -110,5 +135,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENSE](LICENSE) file for details.
 
-## Support me                                                                                                                                     
+## Support me
+
 -bitcoin: [12ukxPmuXkyi4QHrxwZgaok2yiD6GrP39A](bitcoin:12ukxPmuXkyi4QHrxwZgaok2yiD6GrP39A)
