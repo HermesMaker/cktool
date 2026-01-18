@@ -10,6 +10,14 @@ categories = ["command-line-utilities"]
 
 include = ["src/*", "LICENSE"]
 
+[[bin]]
+name = "cktool"
+path = "./src/main.rs"
+
+[[bin]]
+name = "ckret"
+path = "./src/bin/ckret.rs"
+
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 clap_complete = "4.5.61"
