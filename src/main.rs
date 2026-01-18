@@ -83,7 +83,7 @@ async fn main() {
             }
             let retry = match args.retry {
                 Some(re) => re,
-                None => args.task as RetryType,
+                None => (args.task as RetryType) * 10,
             };
             // Start the download process with specified parameters
             let mut downloader = Downloader::new(
