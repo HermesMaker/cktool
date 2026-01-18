@@ -3,6 +3,7 @@ use crate::{
     link::Link,
 };
 use anyhow::{Context, Result};
+use colored::Colorize;
 use futures_util::lock::Mutex;
 use indicatif::MultiProgress;
 use std::sync::Arc;
@@ -25,6 +26,17 @@ pub struct Downloader {
 }
 
 impl Downloader {
+    pub fn print_parameters(&self) {
+        println!("{}", "Parameters".green().bold());
+        println!("{} {}", "Link".blue().bold(), self.link.url());
+        println!("{} {}", "Outdir".blue().bold(), self.outdir);
+        println!("{} {}", "TaskLimit".blue().bold(), self.task_limit);
+        println!("{} {}", "Retry".blue().bold(), self.retry);
+        println!("{} {}", "VideoOnly".blue().bold(), self.video_only);
+        println!("{} {}", "ImageOnly".blue().bold(), self.image_only);
+        println!("{} {}", "Verbose".blue().bold(), self.verbose);
+        println!();
+    }
     pub fn new(
         link: Link,
         task_limit: TaskType,
@@ -62,6 +74,8 @@ impl Downloader {
 
     /// Main function to download all content.
     pub async fn all(&mut self) -> anyhow::Result<()> {
+        self.print_parameters();
+
         let posts_id = self.fetch_post_id().await.context("Failed fetch post id")?;
         let posts_id = Arc::new(Mutex::new(posts_id));
         let posts_id_total = { posts_id.lock().await.len() };
