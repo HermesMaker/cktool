@@ -2,6 +2,12 @@
 
 A Rust-based CLI tool for downloading content from coomer.su and kemono.su platforms.
 
+## New update!
+
+`Resume downloading` after stop running by `ctrl+c` or the download failed for some reasons, you can resume download by running the same command.
+
+`cktool` will check each exist file size and continue downloading from there. Files that have already been downloaded will not be downloaded again.
+
 ## Features
 
 - Simple and easy-to-use command-line interface
