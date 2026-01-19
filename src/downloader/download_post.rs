@@ -1,10 +1,9 @@
 use anyhow::Context;
 use chrono::Local;
-use colored::Colorize;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
-use reqwest::{StatusCode, header::RANGE, retry};
-use std::{cmp::min, path};
+use reqwest::{StatusCode, header::RANGE};
+use std::cmp::min;
 use tokio::{
     fs::OpenOptions,
     io::{AsyncWriteExt, BufWriter},
