@@ -107,7 +107,9 @@ async fn main() {
                             "failed.log".to_string()
                         };
                         let failed_files = downloader.failed_file().await;
-                        Log::save_failed(&failed_files, &log_file).await;
+                        if !failed_files.is_empty() {
+                            Log::save_failed(&failed_files, &log_file).await;
+                        }
                     }
                 }
                 Err(err) => eprintln!("{}", err),
